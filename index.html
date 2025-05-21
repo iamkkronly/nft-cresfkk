@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Marketplace</title>
+    <title>Real NFT Marketplace</title>
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js "></script>
+    <!-- Web3.js for Ethereum interaction -->
     <script src="https://cdn.jsdelivr.net/npm/web3 @1.8.2/dist/web3.min.js"></script>
+    <!-- IPFS HTTP Client -->
+    <script src="https://unpkg.com/ipfs-http-client @51.1.3/dist/index.min.js"></script>
     <style>
         /* Import Google Font */
         @import url('https://fonts.googleapis.com/css2?family=Inter :wght@400;500;600;700&display=swap');
@@ -486,8 +490,8 @@
             position: relative;
             padding: 1px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc), 
-                                       rgba(36, 129, 204, 0.8));
+            background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc) 0%, 
+                                       rgba(36, 129, 204, 0.8)) 100%;
         }
         
         .floating-element {
@@ -526,19 +530,20 @@
     <div class="container">
         <div class="header floating-card">
             <h1>NFT Marketplace</h1>
-            <p>Buy, sell, and create unique digital assets</p>
+            <p>Buy, sell, and create unique digital assets on blockchain</p>
         </div>
         
-        <div class="wallet-info" id="wallet-info">
-            <div class="wallet-address" id="wallet-address">Connect wallet to view address</div>
-            <div class="wallet-balance" id="wallet-balance">Balance: 0 ETH</div>
+        <div class="wallet-info" id="walletInfo">
+            <div class="wallet-address" id="walletAddress">Connect wallet to view address</div>
+            <div class="wallet-balance" id="walletBalance">Balance: 0 ETH</div>
+            <div class="network-info" id="networkInfo">Network: Checking...</div>
         </div>
         
-        <button class="button gradient-border" id="connect-wallet">
+        <button class="button gradient-border" id="connectBtn">
             <span style="position: relative; z-index: 1;">Connect Wallet</span>
         </button>
         
-        <div class="metamask-info" id="metamask-info">
+        <div class="metamask-info" id="metamaskInfo">
             MetaMask not detected. <a href="https://metamask.io/download/ " target="_blank">Install MetaMask</a> to use this app.
         </div>
         
@@ -548,74 +553,66 @@
             <div class="tab" data-tab="my-nfts">My NFTs</div>
         </div>
         
-        <div class="error" id="error-message"></div>
-        <div class="success" id="success-message"></div>
+        <div class="error" id="errorMessage"></div>
+        <div class="success" id="successMessage"></div>
         <div class="loading" id="loading">
             <div class="loading-spinner"></div>
         </div>
         
         <!-- Marketplace Tab -->
-        <div class="tab-content active" id="marketplace-tab">
-            <div class="nft-grid" id="marketplace-grid">
-                <!-- NFTs will be loaded here -->
-            </div>
+        <div class="tab-content active" id="marketplaceTab">
+            <div class="nft-grid" id="marketplaceGrid"></div>
         </div>
         
         <!-- Create NFT Tab -->
-        <div class="tab-content" id="create-tab">
+        <div class="tab-content" id="createTab">
             <div class="upload-form floating-element">
                 <div class="form-group animated-text" style="animation-delay: 0.1s;">
-                    <label for="nft-name">NFT Name</label>
-                    <input type="text" id="nft-name" placeholder="Enter a name for your NFT">
+                    <label for="nftName">NFT Name</label>
+                    <input type="text" id="nftName" placeholder="Enter a name for your NFT">
                 </div>
                 <div class="form-group animated-text" style="animation-delay: 0.2s;">
-                    <label for="nft-description">Description</label>
-                    <textarea id="nft-description" placeholder="Describe your NFT"></textarea>
+                    <label for="nftDescription">Description</label>
+                    <textarea id="nftDescription" placeholder="Describe your NFT"></textarea>
                 </div>
                 <div class="form-group animated-text" style="animation-delay: 0.3s;">
-                    <label for="nft-price">Price (ETH)</label>
-                    <input type="number" id="nft-price" placeholder="0.05" step="0.001" min="0">
+                    <label for="nftPrice">Price in ETH</label>
+                    <input type="number" id="nftPrice" placeholder="0.05" step="0.001" min="0">
                 </div>
                 <div class="form-group animated-text" style="animation-delay: 0.4s;">
                     <label>Upload Image</label>
                     <div class="file-upload">
                         <div class="file-upload-btn">Click or drag to upload image</div>
-                        <input type="file" id="nft-image" accept="image/*">
+                        <input type="file" id="nftImage" accept="image/*">
                     </div>
-                    <img id="preview-image" class="preview-image">
+                    <img id="previewImage" class="preview-image">
                 </div>
-                <button class="button gradient-border animated-text" id="create-nft-btn" style="animation-delay: 0.5s;">
+                <button class="button gradient-border animated-text" id="createNFTButton" style="animation-delay: 0.5s;">
                     <span style="position: relative; z-index: 1;">Create NFT</span>
                 </button>
             </div>
         </div>
         
         <!-- My NFTs Tab -->
-        <div class="tab-content" id="my-nfts-tab">
-            <div class="nft-grid" id="my-nfts-grid">
-                <!-- User's NFTs will be loaded here -->
-            </div>
+        <div class="tab-content" id="myNftsTab">
+            <div class="nft-grid" id="myNftsGrid"></div>
         </div>
         
-        <!-- NFT Detail View (hidden by default) -->
-        <div id="nft-detail-view" style="display: none;">
-            <div class="back-button animated-text" id="back-to-marketplace">Back to Marketplace</div>
+        <!-- Detail View -->
+        <div id="nftDetailView" style="display: none;">
+            <div class="back-button animated-text" id="backToMarketplace">← Back to Marketplace</div>
             <div class="nft-detail animated-text" style="animation-delay: 0.1s;">
-                <img id="detail-image" class="nft-detail-image">
+                <img id="detailImage" class="nft-detail-image">
                 <div class="nft-detail-info">
-                    <div id="detail-name" class="nft-detail-name"></div>
-                    <div id="detail-creator" class="nft-detail-creator"></div>
-                    <div id="detail-price" class="nft-detail-price"></div>
-                    <div id="detail-description" class="nft-detail-description"></div>
-                    <button class="button gradient-border" id="buy-nft-btn">
+                    <h3 id="detailName" class="nft-detail-name"></h3>
+                    <div id="detailCreator" class="nft-detail-creator"></div>
+                    <div id="detailPrice" class="nft-detail-price"></div>
+                    <div id="detailDescription" class="nft-detail-description"></div>
+                    <button class="button gradient-border" id="buyNowButton">
                         <span style="position: relative; z-index: 1;">Buy Now</span>
                     </button>
                 </div>
             </div>
-        </div>
-        
-        <div class="network-info animated-text" id="network-info">
-            Checking for wallet...
         </div>
     </div>
 
@@ -623,78 +620,169 @@
         // Initialize Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Elements
-        const connectWalletBtn = document.getElementById('connect-wallet');
-        const walletAddressEl = document.getElementById('wallet-address');
-        const walletBalanceEl = document.getElementById('wallet-balance');
-        const errorMessageEl = document.getElementById('error-message');
-        const successMessageEl = document.getElementById('success-message');
-        const loadingEl = document.getElementById('loading');
-        const metamaskInfoEl = document.getElementById('metamask-info');
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-        const marketplaceGrid = document.getElementById('marketplace-grid');
-        const myNftsGrid = document.getElementById('my-nfts-grid');
-        const createNftBtn = document.getElementById('create-nft-btn');
-        const nftImageInput = document.getElementById('nft-image');
-        const previewImage = document.getElementById('preview-image');
-        const nftDetailView = document.getElementById('nft-detail-view');
-        const backToMarketplaceBtn = document.getElementById('back-to-marketplace');
-        const buyNftBtn = document.getElementById('buy-nft-btn');
-        const networkInfoEl = document.getElementById('network-info');
-        // Web3 variables
+        
+        // Contract ABI and Address (replace with your actual contract details)
+        const contractABI = [
+            {
+                "inputs": [
+                    {"internalType": "string", "name": "tokenURI", "type": "string"},
+                    {"internalType": "uint256", "name": "price", "type": "uint256"}
+                ],
+                "name": "createNFT",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
+                "name": "buyNFT",
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
+                "name": "getNFT",
+                "outputs": [
+                    {"internalType": "string", "name": "uri", "type": "string"},
+                    {"internalType": "uint256", "name": "price", "type": "uint256"},
+                    {"internalType": "address", "name": "seller", "type": "address"},
+                    {"internalType": "bool", "name": "sold", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAllNFTs",
+                "outputs": [{
+                    "components": [
+                        {"internalType": "uint256", "name": "id"},
+                        {"internalType": "string", "name": "uri"},
+                        {"internalType": "uint256", "name": "price", "type": "uint256"},
+                        {"internalType": "address", "name": "seller", "type": "address"},
+                        {"internalType": "bool", "name": "sold", "type": "bool"}
+                    ],
+                    "internalType": "struct NFTMarketplace.NFT",
+                    "name": "",
+                    "type": "array"
+                }],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getMyNFTs",
+                "outputs": [{
+                    "components": [
+                        {"internalType": "uint256", "name": "id"},
+                        {"internalType": "string", "name": "uri"},
+                        {"internalType": "uint256", "name": "price", "type": "uint256"},
+                        {"internalType": "address", "name": "seller", "type": "address"},
+                        {"internalType": "bool", "name": "sold", "type": "bool"}
+                    ],
+                    "internalType": "struct NFTMarketplace.NFT",
+                    "name": "",
+                    "type": "array"
+                }],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        // Replace with your deployed contract address
+        const contractAddress = "0x..."; // Your contract address here
+        
+        // IPFS configuration
+        const ipfsClient = window.IpfsHttpClient;
+        const ipfs = ipfsClient({
+            host: 'ipfs.infura.io',
+            port: 5001,
+            protocol: 'https'
+        });
+        
+        // State variables
         let web3;
         let accounts = [];
-        let currentChainId;
         let walletConnected = false;
-        let currentNftId = null;
+        let currentChainId;
         let isMetaMaskInstalled = false;
-        // Sample NFT data (in a real app, this would come from your backend/blockchain)
-        let marketplaceNfts = [
-            { id: 1, name: 'Cosmic Voyager', description: 'A journey through the cosmos', price: 0.05, creator: '0x1234...5678', image: 'https://placehold.co/400x400/2c3e50/ffffff?text=Cosmic+Voyager ' },
-            { id: 2, name: 'Digital Dreams', description: 'Exploring the digital realm', price: 0.08, creator: '0x8765...4321', image: 'https://placehold.co/400x400/8e44ad/ffffff?text=Digital+Dreams ' },
-            { id: 3, name: 'Pixel Paradise', description: 'A pixelated utopia', price: 0.03, creator: '0x5678...1234', image: 'https://placehold.co/400x400/16a085/ffffff?text=Pixel+Paradise ' },
-            { id: 4, name: 'Crypto Creature', description: 'A mythical beast from the blockchain', price: 0.12, creator: '0x4321...8765', image: 'https://placehold.co/400x400/e74c3c/ffffff?text=Crypto+Creature ' }
-        ];
-        let myNfts = [];
+        let nftContract;
+        let marketplaceNFTs = [];
+        let myNFTs = [];
+        let currentNFTId = null;
+        
+        // DOM elements
+        const connectBtn = document.getElementById('connectBtn');
+        const walletAddressEl = document.getElementById('walletAddress');
+        const walletBalanceEl = document.getElementById('walletBalance');
+        const networkInfoEl = document.getElementById('networkInfo');
+        const errorMessageEl = document.getElementById('errorMessage');
+        const successMessageEl = document.getElementById('successMessage');
+        const loadingEl = document.getElementById('loading');
+        const metamaskInfoEl = document.getElementById('metamaskInfo');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const marketplaceGrid = document.getElementById('marketplaceGrid');
+        const myNftsGrid = document.getElementById('myNftsGrid');
+        const nftDetailView = document.getElementById('nftDetailView');
+        const backToMarketplaceBtn = document.getElementById('backToMarketplace');
+        const detailImage = document.getElementById('detailImage');
+        const detailName = document.getElementById('detailName');
+        const detailCreator = document.getElementById('detailCreator');
+        const detailPrice = document.getElementById('detailPrice');
+        const detailDescription = document.getElementById('detailDescription');
+        const buyNowButton = document.getElementById('buyNowButton');
+        const createNFTButton = document.getElementById('createNFTButton');
+        const nftNameInput = document.getElementById('nftName');
+        const nftDescriptionInput = document.getElementById('nftDescription');
+        const nftPriceInput = document.getElementById('nftPrice');
+        const nftImageInput = document.getElementById('nftImage');
+        const previewImage = document.getElementById('previewImage');
+        
         // Show error message
         function showError(message) {
             errorMessageEl.textContent = message;
             errorMessageEl.style.display = 'block';
             setTimeout(() => {
                 errorMessageEl.style.display = 'none';
-            }, 3000);
+            }, 5000);
         }
+        
         // Show success message
         function showSuccess(message) {
             successMessageEl.textContent = message;
             successMessageEl.style.display = 'block';
             setTimeout(() => {
                 successMessageEl.style.display = 'none';
-            }, 3000);
+            }, 5000);
         }
+        
         // Show loading state
         function showLoading(show) {
             loadingEl.style.display = show ? 'block' : 'none';
         }
+        
         // Check if MetaMask is installed
         function checkMetaMaskInstalled() {
             isMetaMaskInstalled = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
             if (!isMetaMaskInstalled) {
                 metamaskInfoEl.style.display = 'block';
-                connectWalletBtn.disabled = true;
+                connectBtn.disabled = true;
                 networkInfoEl.textContent = 'MetaMask not installed';
                 return false;
             }
             return true;
         }
+        
         // Initialize Web3
         async function initWeb3() {
             if (!checkMetaMaskInstalled()) {
                 return false;
             }
+            
             try {
                 web3 = new Web3(window.ethereum);
+                nftContract = new web3.eth.Contract(contractABI, contractAddress);
                 return true;
             } catch (error) {
                 console.error("Web3 initialization error:", error);
@@ -702,48 +790,62 @@
                 return false;
             }
         }
+        
         // Connect wallet
         async function connectWallet() {
             if (!web3) {
                 const initialized = await initWeb3();
                 if (!initialized) return false;
             }
+            
             try {
                 showLoading(true);
+                
                 // Request account access
-                accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                
                 if (accounts.length === 0) {
                     showError("No accounts found");
                     showLoading(false);
                     return false;
                 }
+                
                 // Get current chain ID
                 currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                
                 // Update UI
                 const address = accounts[0];
                 walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                
                 // Get balance
                 const balance = await web3.eth.getBalance(address);
                 const ethBalance = web3.utils.fromWei(balance, 'ether');
                 walletBalanceEl.textContent = `Balance: ${parseFloat(ethBalance).toFixed(4)} ETH`;
+                
                 // Update network info
                 updateNetworkInfo(currentChainId);
+                
                 walletConnected = true;
-                connectWalletBtn.textContent = 'Wallet Connected';
-                connectWalletBtn.disabled = true;
+                connectBtn.textContent = 'Wallet Connected';
+                connectBtn.disabled = true;
+                
                 // Send wallet info to the Telegram Bot
                 tg.sendData(JSON.stringify({
                     action: 'wallet_connected',
                     address: address,
                     chainId: currentChainId
                 }));
+                
                 showLoading(false);
                 showSuccess('Wallet connected successfully');
-                // Set up event listeners for account and chain changes
-                setupEventListeners();
+                
                 // Load NFTs
-                renderMarketplaceNfts();
-                renderMyNfts();
+                loadMarketplaceNFTs();
+                loadMyNFTs();
+                
+                // Set up event listeners
+                setupEventListeners();
+                
                 return true;
             } catch (error) {
                 console.error("Wallet connection error:", error);
@@ -752,44 +854,7 @@
                 return false;
             }
         }
-        // Try to connect silently (without user prompt)
-        async function silentConnect() {
-            if (!checkMetaMaskInstalled()) {
-                return false;
-            }
-            try {
-                // Initialize Web3
-                web3 = new Web3(window.ethereum);
-                // Check if already connected
-                const ethAccounts = await web3.eth.getAccounts();
-                if (ethAccounts.length > 0) {
-                    accounts = ethAccounts;
-                    currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                    // Update UI
-                    const address = accounts[0];
-                    walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-                    // Get balance
-                    const balance = await web3.eth.getBalance(address);
-                    const ethBalance = web3.utils.fromWei(balance, 'ether');
-                    walletBalanceEl.textContent = `Balance: ${parseFloat(ethBalance).toFixed(4)} ETH`;
-                    // Update network info
-                    updateNetworkInfo(currentChainId);
-                    walletConnected = true;
-                    connectWalletBtn.textContent = 'Wallet Connected';
-                    connectWalletBtn.disabled = true;
-                    // Set up event listeners
-                    setupEventListeners();
-                    // Load NFTs
-                    renderMarketplaceNfts();
-                    renderMyNfts();
-                    return true;
-                }
-                return false;
-            } catch (error) {
-                console.error("Silent connect error:", error);
-                return false;
-            }
-        }
+        
         // Setup event listeners for MetaMask
         function setupEventListeners() {
             // Handle account changes
@@ -802,15 +867,18 @@
                     // Update UI with new account
                     const address = accounts[0];
                     walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                    
                     // Get balance
                     const balance = await web3.eth.getBalance(address);
                     const ethBalance = web3.utils.fromWei(balance, 'ether');
                     walletBalanceEl.textContent = `Balance: ${parseFloat(ethBalance).toFixed(4)} ETH`;
+                    
                     // Reload NFTs
-                    renderMarketplaceNfts();
-                    renderMyNfts();
+                    loadMarketplaceNFTs();
+                    loadMyNFTs();
                 }
             });
+            
             // Handle chain changes
             window.ethereum.on('chainChanged', (chainId) => {
                 currentChainId = chainId;
@@ -818,26 +886,25 @@
                 // Reload the page as recommended by MetaMask
                 window.location.reload();
             });
-            // Handle connection
-            window.ethereum.on('connect', (connectInfo) => {
-                console.log('MetaMask connected:', connectInfo);
-            });
+            
             // Handle disconnection
             window.ethereum.on('disconnect', (error) => {
                 console.log('MetaMask disconnected:', error);
                 resetWalletConnection();
             });
         }
+        
         // Reset wallet connection
         function resetWalletConnection() {
             walletConnected = false;
             accounts = [];
             walletAddressEl.textContent = 'Connect wallet to view address';
             walletBalanceEl.textContent = 'Balance: 0 ETH';
-            connectWalletBtn.textContent = 'Connect Wallet';
-            connectWalletBtn.disabled = false;
+            connectBtn.textContent = 'Connect Wallet';
+            connectBtn.disabled = false;
             networkInfoEl.textContent = 'Not connected to any network';
         }
+        
         // Update network info
         function updateNetworkInfo(chainId) {
             let networkName;
@@ -862,217 +929,323 @@
             }
             networkInfoEl.textContent = `Connected to ${networkName}`;
         }
+        
+        // Load marketplace NFTs from blockchain
+        async function loadMarketplaceNFTs() {
+            if (!walletConnected) return;
+            
+            try {
+                showLoading(true);
+                const nfts = await nftContract.methods.getAllNFTs().call();
+                
+                marketplaceNFTs = nfts.map(nft => ({
+                    id: parseInt(nft.id),
+                    uri: nft.uri,
+                    price: web3.utils.fromWei(nft.price, 'ether'),
+                    seller: nft.seller,
+                    sold: nft.sold
+                }));
+                
+                showLoading(false);
+                renderMarketplaceNFTs();
+            } catch (error) {
+                console.error("Error loading marketplace NFTs:", error);
+                showError("Failed to load marketplace NFTs");
+                showLoading(false);
+            }
+        }
+        
+        // Load user's NFTs from blockchain
+        async function loadMyNFTs() {
+            if (!walletConnected) return;
+            
+            try {
+                showLoading(true);
+                const nfts = await nftContract.methods.getMyNFTs().call();
+                
+                myNFTs = nfts.map(nft => ({
+                    id: parseInt(nft.id),
+                    uri: nft.uri,
+                    price: web3.utils.fromWei(nft.price, 'ether'),
+                    seller: nft.seller,
+                    sold: nft.sold
+                }));
+                
+                showLoading(false);
+                renderMyNFTs();
+            } catch (error) {
+                console.error("Error loading my NFTs:", error);
+                showError("Failed to load your NFTs");
+                showLoading(false);
+            }
+        }
+        
         // Render marketplace NFTs
-        function renderMarketplaceNfts() {
+        function renderMarketplaceNFTs() {
             marketplaceGrid.innerHTML = '';
-            if (marketplaceNfts.length === 0) {
+            
+            if (marketplaceNFTs.length === 0) {
                 marketplaceGrid.innerHTML = '<p style="text-align: center; padding: 20px;">No NFTs available in the marketplace</p>';
                 return;
             }
-            marketplaceNfts.forEach(nft => {
+            
+            marketplaceNFTs.forEach(nft => {
+                // Skip sold NFTs
+                if (nft.sold) return;
+                
                 const nftElement = document.createElement('div');
                 nftElement.className = 'nft-item';
                 nftElement.innerHTML = `
-                    <img src="${nft.image}" alt="${nft.name}" class="nft-image">
+                    <img src="${nft.uri}" alt="${nft.name}" class="nft-image">
                     <div class="nft-info">
-                        <div class="nft-name">${nft.name}</div>
+                        <div class="nft-name">${nft.uri.split('/').pop()}</div>
                         <div class="nft-price">${nft.price} ETH</div>
-                        <div class="nft-creator">By ${nft.creator}</div>
+                        <div class="nft-creator">By ${nft.seller.substring(0, 6)}...${nft.seller.substring(nft.seller.length - 4)}</div>
                     </div>
                 `;
                 nftElement.addEventListener('click', () => {
-                    showNftDetail(nft);
+                    showNFTDetail(nft);
                 });
                 marketplaceGrid.appendChild(nftElement);
             });
         }
+        
         // Render user's NFTs
-        function renderMyNfts() {
+        function renderMyNFTs() {
             myNftsGrid.innerHTML = '';
+            
             if (!walletConnected) {
                 myNftsGrid.innerHTML = '<p style="text-align: center; padding: 20px;">Connect your wallet to view your NFTs</p>';
                 return;
             }
-            if (myNfts.length === 0) {
+            
+            if (myNFTs.length === 0) {
                 myNftsGrid.innerHTML = '<p style="text-align: center; padding: 20px;">You don\'t have any NFTs yet. Create or buy one!</p>';
                 return;
             }
-            myNfts.forEach(nft => {
+            
+            myNFTs.forEach(nft => {
                 const nftElement = document.createElement('div');
                 nftElement.className = 'nft-item';
                 nftElement.innerHTML = `
-                    <img src="${nft.image}" alt="${nft.name}" class="nft-image">
+                    <img src="${nft.uri}" alt="${nft.uri.split('/').pop()}" class="nft-image">
                     <div class="nft-info">
-                        <div class="nft-name">${nft.name}</div>
+                        <div class="nft-name">${nft.uri.split('/').pop()}</div>
                         <div class="nft-price">${nft.price} ETH</div>
                         <div class="nft-creator">Owned by you</div>
                     </div>
                 `;
                 nftElement.addEventListener('click', () => {
-                    showNftDetail({...nft, owned: true});
+                    showNFTDetail({...nft, owned: true});
                 });
                 myNftsGrid.appendChild(nftElement);
             });
         }
+        
         // Show NFT detail view
-        function showNftDetail(nft) {
-            currentNftId = nft.id;
+        function showNFTDetail(nft) {
+            currentNFTId = nft.id;
+            
             // Hide tab content and show detail view
             tabContents.forEach(content => content.classList.remove('active'));
             nftDetailView.style.display = 'block';
+            
             // Populate detail view
-            document.getElementById('detail-image').src = nft.image;
-            document.getElementById('detail-name').textContent = nft.name;
-            document.getElementById('detail-creator').textContent = `Created by ${nft.creator}`;
-            document.getElementById('detail-price').textContent = `${nft.price} ETH`;
-            document.getElementById('detail-description').textContent = nft.description || 'No description available';
+            detailImage.src = nft.uri;
+            detailName.textContent = nft.uri.split('/').pop();
+            detailCreator.textContent = `Created by ${nft.seller.substring(0, 6)}...${nft.seller.substring(nft.seller.length - 4)}`;
+            detailPrice.textContent = `${nft.price} ETH`;
+            detailDescription.textContent = 'Digital collectible stored on the blockchain';
+            
             // Configure buy button
-            const isOwned = nft.owned || myNfts.some(myNft => myNft.id === nft.id);
-            buyNftBtn.disabled = isOwned || !walletConnected;
-            buyNftBtn.textContent = isOwned ? 'You Own This NFT' : walletConnected ? 'Buy Now' : 'Connect Wallet to Buy';
+            const isOwned = nft.seller.toLowerCase() === accounts[0]?.toLowerCase();
+            buyNowButton.disabled = isOwned || !walletConnected;
+            buyNowButton.textContent = isOwned ? 'You Own This NFT' : walletConnected ? 'Buy Now' : 'Connect Wallet to Buy';
         }
+        
         // Buy NFT
-        async function buyNFT(nftId) {
+        async function buyNFT() {
             if (!walletConnected) {
                 showError('Please connect your wallet first');
                 return;
             }
+            
+            if (!currentNFTId) {
+                showError('No NFT selected');
+                return;
+            }
+            
             try {
                 showLoading(true);
+                
                 // Find the NFT
-                const nft = marketplaceNfts.find(n => n.id === nftId);
+                const nft = marketplaceNFTs.find(n => n.id === currentNFTId);
+                
                 if (!nft) {
                     showError('NFT not found');
                     showLoading(false);
                     return;
                 }
-                // In a real app, this would be a blockchain transaction
-                // For this demo, we'll simulate the purchase
-                // Convert price to wei for a real transaction
-                const priceWei = web3.utils.toWei(nft.price.toString(), 'ether');
-                // Simulate transaction delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                // Add to user's collection
-                myNfts.push({...nft, owned: true});
-                // Send data to Telegram Bot
-                tg.sendData(JSON.stringify({
-                    action: 'nft_purchased',
-                    nft_id: nft.id,
-                    name: nft.name,
-                    price: nft.price,
-                    seller: nft.creator
-                }));
+                
+                // Get NFT details from contract
+                const nftDetails = await nftContract.methods.getNFT(currentNFTId).call();
+                
+                // Buy NFT
+                await nftContract.methods.buyNFT(currentNFTId).send({
+                    from: accounts[0],
+                    value: web3.utils.toWei(nftDetails.price, 'ether')
+                }).on('transactionHash', hash => {
+                    console.log('Transaction Hash:', hash);
+                    tg.sendData(JSON.stringify({
+                        action: 'nft_purchased',
+                        tx_hash: hash,
+                        nft_id: currentNFTId,
+                        price: nftDetails.price
+                    }));
+                });
+                
                 showLoading(false);
-                showSuccess(`Successfully purchased ${nft.name} for ${nft.price} ETH`);
-                // Update buy button
-                buyNftBtn.disabled = true;
-                buyNftBtn.textContent = 'You Own This NFT';
+                showSuccess(`Successfully purchased NFT #${currentNFTId}`);
+                
+                // Update UI
+                buyNowButton.disabled = true;
+                buyNowButton.textContent = 'You Own This NFT';
+                
+                // Refresh NFT lists
+                loadMarketplaceNFTs();
+                loadMyNFTs();
             } catch (error) {
                 console.error("Error buying NFT:", error);
                 showError(error.message || "Failed to buy NFT");
                 showLoading(false);
             }
         }
+        
         // Create NFT
         async function createNFT() {
             if (!walletConnected) {
                 showError('Please connect your wallet first');
                 return;
             }
-            const name = document.getElementById('nft-name').value;
-            const description = document.getElementById('nft-description').value;
-            const price = parseFloat(document.getElementById('nft-price').value);
+            
+            const name = nftNameInput.value.trim();
+            const description = nftDescriptionInput.value.trim();
+            const price = parseFloat(nftPriceInput.value);
+            
             if (!name || !description || isNaN(price) || price <= 0) {
                 showError('Please fill in all fields with valid values');
                 return;
             }
+            
             if (!nftImageInput.files[0]) {
                 showError('Please upload an image for your NFT');
                 return;
             }
+            
             try {
                 showLoading(true);
-                // Read the file as data URL
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const imageUrl = e.target.result;
-                    // In a real app, you would upload to IPFS and mint on blockchain
-                    // For this demo, we'll simulate the creation
-                    // Simulate transaction delay
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    // Create new NFT
-                    const newNftId = Date.now();
-                    const newNft = {
-                        id: newNftId,
-                        name: name,
-                        description: description,
-                        price: price,
-                        creator: accounts[0].substring(0, 6) + '...' + accounts[0].substring(accounts[0].length - 4),
-                        image: imageUrl,
-                        owned: true
+                
+                // Read the file as buffer
+                const file = nftImageInput.files[0];
+                const fileReader = new FileReader();
+                
+                fileReader.onload = async (e) => {
+                    const buffer = Buffer.from(e.target.result.split(',')[1], 'base64');
+                    
+                    // Upload image to IPFS
+                    const imageAdded = await ipfs.add(buffer);
+                    const imageUrl = `ipfs://${imageAdded.path}`;
+                    
+                    // Create metadata JSON
+                    const metadata = {
+                        name,
+                        description,
+                        image: imageUrl
                     };
-                    // Add to marketplace and user's collection
-                    marketplaceNfts.push(newNft);
-                    myNfts.push(newNft);
-                    // Send data to Telegram Bot
-                    tg.sendData(JSON.stringify({
-                        action: 'nft_created',
-                        nft_id: newNftId,
-                        name: name,
-                        price: price
-                    }));
+                    
+                    // Upload metadata to IPFS
+                    const metadataAdded = await ipfs.add(Buffer.from(JSON.stringify(metadata)));
+                    const tokenURI = `ipfs://${metadataAdded.path}`;
+                    
+                    // Mint NFT on blockchain
+                    const receipt = await nftContract.methods.createNFT(tokenURI, web3.utils.toWei(price.toString(), 'ether'))
+                        .send({ from: accounts[0] })
+                        .on('transactionHash', hash => {
+                            console.log('Transaction Hash:', hash);
+                            tg.sendData(JSON.stringify({
+                                action: 'nft_created',
+                                tx_hash: hash,
+                                name,
+                                price
+                            }));
+                        });
+                    
+                    showLoading(false);
+                    showSuccess(`Successfully created NFT: ${name}`);
+                    
                     // Reset form
-                    document.getElementById('nft-name').value = '';
-                    document.getElementById('nft-description').value = '';
-                    document.getElementById('nft-price').value = '';
+                    nftNameInput.value = '';
+                    nftDescriptionInput.value = '';
+                    nftPriceInput.value = '';
                     nftImageInput.value = '';
                     previewImage.style.display = 'none';
-                    showLoading(false);
-                    showSuccess('NFT created successfully');
+                    
                     // Switch to My NFTs tab
-                    document.querySelector('.tab[data-tab="my-nfts"]').click();
+                    document.querySelector('[data-tab="my-nfts"]').click();
+                    
+                    // Refresh NFT lists
+                    loadMarketplaceNFTs();
+                    loadMyNFTs();
                 };
-                reader.readAsDataURL(nftImageInput.files[0]);
+                
+                fileReader.readAsDataURL(file);
             } catch (error) {
                 console.error("Error creating NFT:", error);
                 showError(error.message || "Failed to create NFT");
                 showLoading(false);
             }
         }
+        
         // Tab switching
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 // Hide NFT detail view when switching tabs
                 nftDetailView.style.display = 'none';
+                
                 // Update active tab
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
+                
                 // Show corresponding content
                 const tabId = tab.getAttribute('data-tab');
                 tabContents.forEach(content => {
                     content.classList.remove('active');
-                    if (content.id === `${tabId}-tab`) {
+                    if (content.id === `${tabId}Tab`) {
                         content.classList.add('active');
+                        
+                        // Load content based on tab
+                        if (tabId === 'my-nfts') {
+                            renderMyNFTs();
+                        } else if (tabId === 'marketplace') {
+                            renderMarketplaceNFTs();
+                        }
                     }
                 });
-                // Load content based on tab
-                if (tabId === 'my-nfts') {
-                    renderMyNfts();
-                } else if (tabId === 'marketplace') {
-                    renderMarketplaceNfts();
-                }
             });
         });
+        
         // Back button functionality
         backToMarketplaceBtn.addEventListener('click', () => {
             nftDetailView.style.display = 'none';
             // Show the previously active tab
             const activeTab = document.querySelector('.tab.active');
             const activeTabId = activeTab.getAttribute('data-tab');
-            document.getElementById(`${activeTabId}-tab`).classList.add('active');
+            document.getElementById(`${activeTabId}Tab`).classList.add('active');
         });
+        
         // Connect wallet button
-        connectWalletBtn.addEventListener('click', connectWallet);
+        connectBtn.addEventListener('click', connectWallet);
+        
         // Image preview for NFT creation
         nftImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -1085,19 +1258,20 @@
                 reader.readAsDataURL(file);
             }
         });
+        
         // Create NFT button
-        createNftBtn.addEventListener('click', createNFT);
+        createNFTButton.addEventListener('click', createNFT);
+        
         // Buy NFT button
-        buyNftBtn.addEventListener('click', () => {
-            buyNFT(currentNftId);
-        });
+        buyNowButton.addEventListener('click', buyNFT);
+        
         // Deep link handling for mobile
         function handleDeepLink() {
             // Check if we're on mobile
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             if (isMobile && isMetaMaskInstalled) {
                 // For mobile, we need to use deep linking
-                connectWalletBtn.addEventListener('click', (e) => {
+                connectBtn.addEventListener('click', (e) => {
                     if (!walletConnected) {
                         e.preventDefault();
                         // Create deep link to MetaMask
@@ -1108,42 +1282,39 @@
                 });
             }
         }
+        
         // Initialize the app
         async function init() {
             // Check if MetaMask is installed
             checkMetaMaskInstalled();
+            
             // Try to connect silently first
-            const connected = await silentConnect();
+            const connected = await connectWallet();
+            
             if (!connected) {
                 // If not connected, update UI accordingly
                 networkInfoEl.textContent = isMetaMaskInstalled ? 
                     'MetaMask detected. Click "Connect Wallet" to continue.' : 
                     'MetaMask not installed';
             }
+            
             // Handle deep linking for mobile
             handleDeepLink();
-            // Render marketplace NFTs
-            renderMarketplaceNfts();
+            
             // Set main button
             tg.MainButton.setText('Connect Wallet');
             tg.MainButton.onClick(() => {
                 if (!walletConnected) {
                     connectWallet();
                 } else {
-                    document.querySelector('.tab[data-tab="my-nfts"]').click();
+                    document.querySelector('[data-tab="my-nfts"]').click();
                 }
             });
             tg.MainButton.show();
         }
+        
         // Start the app
         document.addEventListener('DOMContentLoaded', init);
-        // Additional event listener for when the page is fully loaded
-        window.addEventListener('load', async () => {
-            // Try to connect again after page is fully loaded
-            if (!walletConnected && isMetaMaskInstalled) {
-                await silentConnect();
-            }
-        });
     </script>
 </body>
-  </html>
+</html>
