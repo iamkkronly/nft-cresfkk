@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real NFT Marketplace</title>
+    <title>Telegram NFT Marketplace</title>
+    
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js "></script>
+    
     <!-- Web3.js for Ethereum interaction -->
     <script src="https://cdn.jsdelivr.net/npm/web3 @1.8.2/dist/web3.min.js"></script>
+    
     <!-- IPFS HTTP Client -->
     <script src="https://unpkg.com/ipfs-http-client @51.1.3/dist/index.min.js"></script>
+    
     <style>
         /* Import Google Font */
         @import url('https://fonts.googleapis.com/css2?family=Inter :wght@400;500;600;700&display=swap');
@@ -490,8 +494,8 @@
             position: relative;
             padding: 1px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc) 0%, 
-                                       rgba(36, 129, 204, 0.8)) 100%;
+            background: linear-gradient(135deg, var(--tg-theme-button-color, #2481cc), 
+                                       rgba(36, 129, 204, 0.8));
         }
         
         .floating-element {
@@ -530,7 +534,7 @@
     <div class="container">
         <div class="header floating-card">
             <h1>NFT Marketplace</h1>
-            <p>Buy, sell, and create unique digital assets on blockchain</p>
+            <p>Buy, sell, and create unique digital assets</p>
         </div>
         
         <div class="wallet-info" id="walletInfo">
@@ -561,7 +565,9 @@
         
         <!-- Marketplace Tab -->
         <div class="tab-content active" id="marketplaceTab">
-            <div class="nft-grid" id="marketplaceGrid"></div>
+            <div class="nft-grid" id="marketplaceGrid">
+                <!-- NFTs will be loaded here -->
+            </div>
         </div>
         
         <!-- Create NFT Tab -->
@@ -600,7 +606,7 @@
         
         <!-- Detail View -->
         <div id="nftDetailView" style="display: none;">
-            <div class="back-button animated-text" id="backToMarketplace">← Back to Marketplace</div>
+            <div class="back-button animated-text" id="backToMarketplace">Back to Marketplace</div>
             <div class="nft-detail animated-text" style="animation-delay: 0.1s;">
                 <img id="detailImage" class="nft-detail-image">
                 <div class="nft-detail-info">
@@ -621,7 +627,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Contract ABI and Address (replace with your actual contract details)
+        // Contract ABI and Address (Replace with your own)
         const contractABI = [
             {
                 "inputs": [
@@ -656,8 +662,8 @@
                 "name": "getAllNFTs",
                 "outputs": [{
                     "components": [
-                        {"internalType": "uint256", "name": "id"},
-                        {"internalType": "string", "name": "uri"},
+                        {"internalType": "uint256", "name": "id", "type": "uint256"},
+                        {"internalType": "string", "name": "uri", "type": "string"},
                         {"internalType": "uint256", "name": "price", "type": "uint256"},
                         {"internalType": "address", "name": "seller", "type": "address"},
                         {"internalType": "bool", "name": "sold", "type": "bool"}
@@ -674,8 +680,8 @@
                 "name": "getMyNFTs",
                 "outputs": [{
                     "components": [
-                        {"internalType": "uint256", "name": "id"},
-                        {"internalType": "string", "name": "uri"},
+                        {"internalType": "uint256", "name": "id", "type": "uint256"},
+                        {"internalType": "string", "name": "uri", "type": "string"},
                         {"internalType": "uint256", "name": "price", "type": "uint256"},
                         {"internalType": "address", "name": "seller", "type": "address"},
                         {"internalType": "bool", "name": "sold", "type": "bool"}
@@ -690,7 +696,7 @@
         ];
         
         // Replace with your deployed contract address
-        const contractAddress = "0x..."; // Your contract address here
+        const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE";
         
         // IPFS configuration
         const ipfsClient = window.IpfsHttpClient;
@@ -703,8 +709,8 @@
         // State variables
         let web3;
         let accounts = [];
-        let walletConnected = false;
         let currentChainId;
+        let walletConnected = false;
         let isMetaMaskInstalled = false;
         let nftContract;
         let marketplaceNFTs = [];
@@ -815,7 +821,7 @@
                 
                 // Update UI
                 const address = accounts[0];
-                walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.slice(-4)}`;
                 
                 // Get balance
                 const balance = await web3.eth.getBalance(address);
@@ -861,19 +867,15 @@
             window.ethereum.on('accountsChanged', async (newAccounts) => {
                 accounts = newAccounts;
                 if (accounts.length === 0) {
-                    // User disconnected their wallet
                     resetWalletConnection();
                 } else {
-                    // Update UI with new account
                     const address = accounts[0];
-                    walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                    walletAddressEl.textContent = `Wallet: ${address.substring(0, 6)}...${address.slice(-4)}`;
                     
-                    // Get balance
                     const balance = await web3.eth.getBalance(address);
                     const ethBalance = web3.utils.fromWei(balance, 'ether');
                     walletBalanceEl.textContent = `Balance: ${parseFloat(ethBalance).toFixed(4)} ETH`;
                     
-                    // Reload NFTs
                     loadMarketplaceNFTs();
                     loadMyNFTs();
                 }
@@ -883,7 +885,6 @@
             window.ethereum.on('chainChanged', (chainId) => {
                 currentChainId = chainId;
                 updateNetworkInfo(chainId);
-                // Reload the page as recommended by MetaMask
                 window.location.reload();
             });
             
@@ -990,17 +991,16 @@
             }
             
             marketplaceNFTs.forEach(nft => {
-                // Skip sold NFTs
                 if (nft.sold) return;
                 
                 const nftElement = document.createElement('div');
                 nftElement.className = 'nft-item';
                 nftElement.innerHTML = `
-                    <img src="${nft.uri}" alt="${nft.name}" class="nft-image">
+                    <img src="${nft.uri}" alt="${nft.id}" class="nft-image">
                     <div class="nft-info">
                         <div class="nft-name">${nft.uri.split('/').pop()}</div>
                         <div class="nft-price">${nft.price} ETH</div>
-                        <div class="nft-creator">By ${nft.seller.substring(0, 6)}...${nft.seller.substring(nft.seller.length - 4)}</div>
+                        <div class="nft-creator">By ${nft.seller.substring(0, 6)}...${nft.seller.slice(-4)}</div>
                     </div>
                 `;
                 nftElement.addEventListener('click', () => {
@@ -1028,7 +1028,7 @@
                 const nftElement = document.createElement('div');
                 nftElement.className = 'nft-item';
                 nftElement.innerHTML = `
-                    <img src="${nft.uri}" alt="${nft.uri.split('/').pop()}" class="nft-image">
+                    <img src="${nft.uri}" alt="${nft.id}" class="nft-image">
                     <div class="nft-info">
                         <div class="nft-name">${nft.uri.split('/').pop()}</div>
                         <div class="nft-price">${nft.price} ETH</div>
@@ -1053,7 +1053,7 @@
             // Populate detail view
             detailImage.src = nft.uri;
             detailName.textContent = nft.uri.split('/').pop();
-            detailCreator.textContent = `Created by ${nft.seller.substring(0, 6)}...${nft.seller.substring(nft.seller.length - 4)}`;
+            detailCreator.textContent = `Created by ${nft.seller.substring(0, 6)}...${nft.seller.slice(-4)}`;
             detailPrice.textContent = `${nft.price} ETH`;
             detailDescription.textContent = 'Digital collectible stored on the blockchain';
             
@@ -1077,15 +1077,6 @@
             
             try {
                 showLoading(true);
-                
-                // Find the NFT
-                const nft = marketplaceNFTs.find(n => n.id === currentNFTId);
-                
-                if (!nft) {
-                    showError('NFT not found');
-                    showLoading(false);
-                    return;
-                }
                 
                 // Get NFT details from contract
                 const nftDetails = await nftContract.methods.getNFT(currentNFTId).call();
@@ -1269,16 +1260,13 @@
         function handleDeepLink() {
             // Check if we're on mobile
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile && isMetaMaskInstalled) {
-                // For mobile, we need to use deep linking
+            if (isMobile && isMetaMaskInstalled && !walletConnected) {
                 connectBtn.addEventListener('click', (e) => {
-                    if (!walletConnected) {
-                        e.preventDefault();
-                        // Create deep link to MetaMask
-                        const deepLink = `https://metamask.app.link/dapp/ ${window.location.href.split('//')[1]}`;
-                        window.location.href = deepLink;
-                        return false;
-                    }
+                    e.preventDefault();
+                    // Create deep link to MetaMask
+                    const deepLink = `https://metamask.app.link/dapp/ ${window.location.href.split('//')[1]}`;
+                    window.location.href = deepLink;
+                    return false;
                 });
             }
         }
@@ -1288,11 +1276,10 @@
             // Check if MetaMask is installed
             checkMetaMaskInstalled();
             
-            // Try to connect silently first
+            // Try to connect silently
             const connected = await connectWallet();
             
             if (!connected) {
-                // If not connected, update UI accordingly
                 networkInfoEl.textContent = isMetaMaskInstalled ? 
                     'MetaMask detected. Click "Connect Wallet" to continue.' : 
                     'MetaMask not installed';
@@ -1307,7 +1294,7 @@
                 if (!walletConnected) {
                     connectWallet();
                 } else {
-                    document.querySelector('[data-tab="my-nfts"]').click();
+                    document.querySelector('.tab[data-tab="my-nfts"]').click();
                 }
             });
             tg.MainButton.show();
